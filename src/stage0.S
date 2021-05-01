@@ -21,6 +21,25 @@ _start:
     /* save drive number to read kernel later */
     mov %dl, drive_num
 
+    /* enable A20 line */
+    /* read and save state */
+    call enable_a20_wait0
+    movb $0xD0, %al
+    outb $0x64
+    call enable_a20_wait1
+    xorw %ax, %ax
+    inb $0x60
+
+    /* write new state with A20 bit set (0x2) */
+    pushw %ax
+    call enable_a20_wait0
+    movb $0xD1, %al
+    outb $0x64
+    call enable_a20_wait0
+    popw %ax
+    orw $0x2, %ax
+    outb $0x60
+
     sti
 
     /* should print TETRIS TIME */
@@ -41,13 +60,13 @@ _start:
      * number of sectors to be read is %cx.
      */
 
-    movw $0xFF, %cx
+    mov $0x5FF, %ecx
     movw $0x1000, segment
     movw $0x0000, offset
     movw $1, sector
     movw $2, chs_sector
 sector_loop:
-    push %cx
+    push %ecx
 
     /* attempt read with "extended read sectors from drive" (AH=42h) */
     movb $0x42, %ah
@@ -68,27 +87,31 @@ sector_loop:
     int $0x13
     jc disk_error
 disk_success:
-    incb sector
+    incw sector
+
+    /* loading indicator */
+    mov $'.', %al
+    call print_char
 
     /* increase sector count and check for track limit */
-    incb chs_sector
+    incw chs_sector
 
-    movb sectors_per_track, %al
+    mov sectors_per_track, %al
     cmp %al, chs_sector
     jna sector_same_head_cylinder
 
     /* sectors per track exceeded, reset sector to 1, increase heads and check
      * for head limit
      */
-    movb $1, chs_sector
-    incb chs_head
+    movw $1, chs_sector
+    incw chs_head
     mov num_heads, %al
     cmp %al, chs_head
     jna sector_same_head_cylinder
 
     /* head count exceeded, reset head to 0, increase cylinder */
-    movb $0, chs_head
-    incb chs_cylinder
+    movw $0, chs_head
+    incw chs_cylinder
 
 sector_same_head_cylinder:
     /* single 512 sector read, increase offset by 0x200 (512) */
@@ -99,7 +122,7 @@ sector_same_head_cylinder:
     addw $0x1000, segment
     movw $0x0000, offset
 sector_same_segment:
-    pop %cx
+    pop %ecx
     loop sector_loop
 
     /* video mode: 320x200 @ 16 colors */
@@ -107,26 +130,7 @@ sector_same_segment:
     movb $0x13, %al
     int $0x10
 
-    /* enable A20 line */
     cli
-
-    /* read and save state */
-    call enable_a20_wait0
-    movb $0xD0, %al
-    outb $0x64
-    call enable_a20_wait1
-    xorw %ax, %ax
-    inb $0x60
-
-    /* write new state with A20 bit set (0x2) */
-    pushw %ax
-    call enable_a20_wait0
-    movb $0xD1, %al
-    outb $0x64
-    call enable_a20_wait0
-    popw %ax
-    orw $0x2, %ax
-    outb $0x60
 
     /* enable PE flag */
     movl %cr0, %eax
@@ -194,17 +198,23 @@ print:
 
 1:  ret
 
+print_char:
+    mov $0x0E, %ah
+    mov $0x0001, %bx
+    int $0x10
+    ret
+
 welcome_str:
     .asciz "TETRIS TIME\r\n"
 disk_error_str:
     .asciz "DISK ERROR\r\n"
 
 chs_sector:
-    .byte 0x01
+    .word 0x01
 chs_cylinder:
-    .byte 0x00
+    .word 0x00
 chs_head:
-    .byte 0x00
+    .word 0x00
 
 /* SAVED DRIVE NUMBER TO READ FROM */
 drive_num:

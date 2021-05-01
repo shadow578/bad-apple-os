@@ -27,6 +27,14 @@
  * 0    | MAX   | 15    | 100           | 50                | 100k
  * 
  * seems like we are limited by the number of sectors loaded in stage0 (~130k)...
+ * ---
+ * stage0 now loads 0x5FF sectors without too much complaining, which should give us ~780k to work with.
+ * however, going over ~400k starts breaking the screen buffer (idk)
+ * 
+ * skip | count | nth   | min_rect_size | max_rect_count    | est. size
+ * 0    | -     | 5     | 100           | 70                | 372k      
+ * 0    | -     | 5     | 100           | 76                | 394k  
+ *      -> using max_rect_count = 77 (est. size= 397k) starts breaking the screen
  */
 bool render(const u8 *rects, u32 frameNo)
 {
