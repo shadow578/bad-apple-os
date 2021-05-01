@@ -1,4 +1,28 @@
-# TETRIS-OS: An operating system that only plays Tetris.
+# BAD-APPLE-OS: An operating system that only plays [Bad Apple](https://en.wikipedia.org/wiki/Bad_Apple!!)
+
+Yep, this is bad apple running on bare x86. Based on [jdah/tetris-os](https://github.com/jdah/tetris-os), but who wants to play tetris anyways?
+
+The image is stored as a series of rectangles (5 bytes per rectangle, max. 70 rectangles per frame). 
+
+A higher quality could be achieved by increasing the number of rectangles and framerate. 
+but i could not get the bootloader (stage0.S) to load more than like 400k of kernel without breaking stuff...
+maybe i'll fix it someday
+
+![screenshot](images/bad_apple.png)
+
+### Features:
+- Bad Apple
+- 32-bit (x86)
+- fully custom bootloader
+- runs at like 7 fps
+- looks like 💩
+- no music
+- may or may not run on real hardware 
+
+---
+
+---
+# Original README <br/> TETRIS-OS: An operating system that only plays Tetris.
 
 ![screenshot](images/0.png)
 
