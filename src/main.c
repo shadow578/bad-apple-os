@@ -7,18 +7,17 @@
 #include "font.h"
 #include "system.h"
 #include "keyboard.h"
-#include "speaker.h"
 #include "fpu.h"
-#include "sound.h"
-#include "music.h"
 #include "frames.h"
 
-#define FPS 30
+#define FPS 7
 #define next(ptr) (*((ptr)++))
 #define FLAG_LAST_RECT 0x8
 #define FLAG_B 0x4
 #define FLAG_C 0x2
 #define FLAG_D 0x1
+
+char buf[64];
 
 /**
  * working configs for rectangles renderer:
@@ -35,6 +34,9 @@
  * 0    | -     | 5     | 100           | 70                | 372k      
  * 0    | -     | 5     | 100           | 76                | 394k  
  *      -> using max_rect_count = 77 (est. size= 397k) starts breaking the screen
+ * 
+ * final config:
+ * 0    | -     | 5     | 50            | 70                | 392k 
  */
 bool render(const u8 *rects, u32 frameNo)
 {
@@ -80,9 +82,6 @@ bool render(const u8 *rects, u32 frameNo)
         w = (data >> 9) & 0x1FF;
         h = data & 0x1FF;
 
-        // clamp to screen bounds
-        // TODO
-
         // draw rectangle to screen
         for (size_t sx = x; sx < (x + w); sx++)
             for (size_t sy = y; sy < (y + h); sy++)
@@ -92,7 +91,6 @@ bool render(const u8 *rects, u32 frameNo)
     } while ((flags & FLAG_LAST_RECT) == 0);
 
     // draw frame no
-    char buf[64];
     itoa(frameNo, buf, 64);
     font_str(
         buf,
@@ -120,35 +118,13 @@ void _main(u32 magic)
     screen_init();
     timer_init();
     keyboard_init();
-    sound_init();
 
-    if (sound_enabled())
-    {
-        music_init();
-        sound_master(255);
-    }
-
-    //panic("BOOT_OK");
-
-    u32 last_frame = 0, last = 0, frameCounter = 0;
+    u32 last_frame = 0, frameCounter = 0;
     const u8 *rects;
-
-    font_str(
-        "READY",
-        SCREEN_WIDTH / 2,
-        SCREEN_HEIGHT / 2,
-        COLOR(255, 0, 0));
-    screen_swap();
 
     while (true)
     {
         const u32 now = (u32)timer_get();
-
-        if (sound_enabled() && now != last)
-        {
-            //music_tick();
-            //last = now;
-        }
 
         if ((now - last_frame) > (TIMER_TPS / FPS))
         {
@@ -163,11 +139,24 @@ void _main(u32 magic)
             // increment frame counter
             frameCounter++;
 
-            // restart if on last frame
+            // pause on last frame
             if (eof)
             {
-                //TODO
-                panic("EOF");
+                screen_clear(COLOR(0, 0, 0));
+                font_str(
+                    "END",
+                    SCREEN_WIDTH / 2,
+                    SCREEN_HEIGHT / 2,
+                    COLOR(255, 255, 255));
+                itoa(frameCounter, buf, 64);
+                font_str(
+                    buf,
+                    0,
+                    0,
+                    COLOR(255, 0, 0));
+                screen_swap();
+                while (true)
+                    ;
             }
 
             // controlled in system.c
