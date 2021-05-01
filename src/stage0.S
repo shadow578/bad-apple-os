@@ -41,7 +41,7 @@ _start:
      * number of sectors to be read is %cx.
      */
 
-    movw $0x40, %cx
+    movw $0xFF, %cx
     movw $0x1000, segment
     movw $0x0000, offset
     movw $1, sector
