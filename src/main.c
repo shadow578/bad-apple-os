@@ -14,48 +14,93 @@
 #include "frames.h"
 
 #define FPS 30
+#define next(ptr) (*((ptr)++))
+#define FLAG_LAST_RECT 0x8
+#define FLAG_B 0x4
+#define FLAG_C 0x2
+#define FLAG_D 0x1
 
-void render(const u8 *frame, u32 frameNo)
+/**
+ * working configs for rectangles renderer:
+ * skip | count | nth   | min_rect_size | max_rect_count    | est. size
+ * 0    | 250   | 3     | 100           | 100               | 80k
+ * 0    | MAX   | 15    | 100           | 50                | 100k
+ * 
+ * seems like we are limited by the number of sectors loaded in stage0 (~130k)...
+ */
+bool render(const u8 *rects, u32 frameNo)
 {
-    // draw the frame
-    size_t x = 0, y = 0;
-    u8 color, repeats;
-    while (true)
+    /*
+     * format of the rects data is as follows:
+     * - first two bytes are the screen and rectangle colors
+     * - following that are 1..n rectangles:
+     *  - 5 bytes per rectangle, with x,y,w,h each with 9 bit and 4 bit flags
+     *  - like so: ABCDxxxx xxxxxyyy yyyyyyww wwwwwwwh hhhhhhhh
+     *  - flag A indicates that this is the last rectangle, and following it is the start of a new frame
+     *  - flags BCD are not used
+     * - end condition: screen and rect color are equal
+     */
+    // get screen and rectangle color
+    u8 screenColor = next(rects);
+    u8 rectColor = next(rects);
+
+    // check for end condition
+    if (screenColor == rectColor)
+        return true;
+
+    // clear the screen with the screen color
+    screen_clear(screenColor);
+
+    // read rectangle data until we hit the last rectangle
+    u64 data = 0;
+    size_t x, y, w, h;
+    u8 flags;
+    u8 rectsCount = 0;
+    do
     {
-        // get next value
-        color = *(frame++);
-        repeats = *(frame++);
-
-        // check for end condition
-        if (repeats == 0x0)
-            break;
-
-        // draw pixels
-        while (repeats--)
+        // read 5 bytes into data
+        for (u8 i = 0; i < 5; i++)
         {
-            screen_offset(x, y) = color;
-
-            x++;
-            if (x >= SCREEN_WIDTH)
-            {
-                x = 0;
-                y++;
-            }
-
-            // failsafe, if the data is ok this should not happen
-            if (y >= SCREEN_HEIGHT)
-                y = 0;
+            data <<= 8;
+            data |= next(rects);
         }
-    }
+
+        // extract values
+        flags = (data >> 36) & 0xF;
+        x = (data >> 27) & 0x1FF;
+        y = (data >> 18) & 0x1FF;
+        w = (data >> 9) & 0x1FF;
+        h = data & 0x1FF;
+
+        // clamp to screen bounds
+        // TODO
+
+        // draw rectangle to screen
+        for (size_t sx = x; sx < (x + w); sx++)
+            for (size_t sy = y; sy < (y + h); sy++)
+                screen_offset(sx, sy) = rectColor;
+
+        rectsCount++;
+    } while ((flags & FLAG_LAST_RECT) == 0);
 
     // draw frame no
-    char bufFrameNo[64];
-    itoa(frameNo, bufFrameNo, 64);
+    char buf[64];
+    itoa(frameNo, buf, 64);
     font_str(
-        bufFrameNo,
+        buf,
         0,
         0,
         COLOR(255, 0, 0));
+
+    // draw number of rects
+    itoa(rectsCount, buf, 64);
+    font_str(
+        buf,
+        0,
+        10,
+        COLOR(255, 0, 0));
+
+    return false;
 }
 
 void _main(u32 magic)
@@ -75,8 +120,10 @@ void _main(u32 magic)
         sound_master(255);
     }
 
+    //panic("BOOT_OK");
+
     u32 last_frame = 0, last = 0, frameCounter = 0;
-    const u8 *thisFrame;
+    const u8 *rects;
 
     font_str(
         "READY",
@@ -99,23 +146,21 @@ void _main(u32 magic)
         {
             last_frame = now;
 
-            // get next frame
-            thisFrame = frames[frameCounter];
+            // get rects for next frame
+            rects = rectData[frameCounter];
 
-            // check for frames end condition (index 0 (color)= 0x0)
-            if (thisFrame[0] == 0x0)
-            {
-                // restart playback
-                //frameCounter = 0;
-                //thisFrame = frames[frameCounter];
-                panic("EOF");
-            }
-
-            // render the frame
-            render(thisFrame, frameCounter);
+            // render next frame
+            bool eof = render(rects, frameCounter);
 
             // increment frame counter
             frameCounter++;
+
+            // restart if on last frame
+            if (eof)
+            {
+                //TODO
+                panic("EOF");
+            }
 
             // controlled in system.c
             const char *notification = get_notification();

@@ -6,7 +6,8 @@ namespace Converter
     {
         public static void Main(String[] args)
         {
-            Pixels.Convert();
+            //Pixels.Convert();
+            Rects.Convert();
         }
     }
 }
