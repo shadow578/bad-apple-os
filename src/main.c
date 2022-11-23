@@ -11,6 +11,7 @@
 #include "frames.h"
 
 #define FPS 7
+#define WAIT_FRAMES (FPS * 5)
 #define next(ptr) (*((ptr)++))
 #define FLAG_LAST_RECT 0x8
 #define FLAG_B 0x4
@@ -119,7 +120,15 @@ void _main(u32 magic)
     timer_init();
     keyboard_init();
 
-    u32 last_frame = 0, frameCounter = 0;
+    screen_clear(COLOR(0, 0, 0));
+    font_str(
+        "READY",
+        SCREEN_WIDTH / 2,
+        SCREEN_HEIGHT / 2,
+        COLOR(255, 255, 255));
+    screen_swap();
+
+    u32 last_frame = 0, waitFrames = 0, frameCounter = 0;
     const u8 *rects;
 
     while (true)
@@ -130,34 +139,39 @@ void _main(u32 magic)
         {
             last_frame = now;
 
-            // get rects for next frame
-            rects = rectData[frameCounter];
-
-            // render next frame
-            bool eof = render(rects, frameCounter);
-
-            // increment frame counter
-            frameCounter++;
-
-            // pause on last frame
-            if (eof)
+            if (waitFrames > WAIT_FRAMES)
             {
-                screen_clear(COLOR(0, 0, 0));
-                font_str(
-                    "END",
-                    SCREEN_WIDTH / 2,
-                    SCREEN_HEIGHT / 2,
-                    COLOR(255, 255, 255));
-                itoa(frameCounter, buf, 64);
-                font_str(
-                    buf,
-                    0,
-                    0,
-                    COLOR(255, 0, 0));
-                screen_swap();
-                while (true)
-                    ;
+                // get rects for next frame
+                rects = rectData[frameCounter];
+
+                // render next frame
+                bool eof = render(rects, frameCounter);
+
+                // increment frame counter
+                frameCounter++;
+
+                // pause on last frame
+                if (eof)
+                {
+                    screen_clear(COLOR(0, 0, 0));
+                    font_str(
+                        "END",
+                        SCREEN_WIDTH / 2,
+                        SCREEN_HEIGHT / 2,
+                        COLOR(255, 255, 255));
+                    itoa(frameCounter, buf, 64);
+                    font_str(
+                        buf,
+                        0,
+                        0,
+                        COLOR(255, 0, 0));
+                    screen_swap();
+                    while (true)
+                        ;
+                }
             }
+            else
+                waitFrames++;
 
             // controlled in system.c
             const char *notification = get_notification();
