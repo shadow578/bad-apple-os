@@ -19,12 +19,14 @@ ASFLAGS=
 LDFLAGS=
 
 BOOTSECT_SRCS=\
-	src/stage0.S
+	src/lib/boot/stage0.S
 
 BOOTSECT_OBJS=$(BOOTSECT_SRCS:.S=.o)
 
-KERNEL_C_SRCS=$(wildcard src/*.c)
-KERNEL_S_SRCS=$(filter-out $(BOOTSECT_SRCS), $(wildcard src/*.S))
+KERNEL_C_SRCS=\
+	$(wildcard src/*.c) \
+	$(wildcard src/**/*.c)
+KERNEL_S_SRCS=$(filter-out $(BOOTSECT_SRCS), $(wildcard src/lib/boot/*.S))
 KERNEL_OBJS=$(KERNEL_C_SRCS:.c=.o) $(KERNEL_S_SRCS:.S=.o)
 
 BOOTSECT=bootsect.bin
@@ -35,6 +37,7 @@ all: dirs bootsect kernel
 
 clean:
 	rm -f ./**/*.o
+	rm -f ./**/**/*.o
 	rm -f ./*.img
 	rm -f ./**/*.elf
 	rm -f ./**/*.bin
@@ -52,7 +55,7 @@ bootsect: $(BOOTSECT_OBJS)
 	$(LD) -o ./bin/$(BOOTSECT) $^ -Ttext 0x7C00 --oformat=binary
 
 kernel: $(KERNEL_OBJS)
-	$(LD) -o ./bin/$(KERNEL) $^ $(LDFLAGS) -Tsrc/link.ld
+	$(LD) -o ./bin/$(KERNEL) $^ $(LDFLAGS) -Tsrc/lib/link.ld
 
 img: dirs bootsect kernel
 	dd if=/dev/zero of=$(IMG) bs=512 count=2880

@@ -6,7 +6,7 @@
 // min_rect_size (w*h): 50
 // max_rect_count : 70
 
-#include "util.h"
+#include "lib/util.h"
 /* frame_0005 (0 rects) */
 const u8 rd_frame_0005[] = {
 0x0, 0xFF, 
