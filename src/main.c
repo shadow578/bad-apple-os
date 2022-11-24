@@ -114,7 +114,6 @@ void _main(u32 magic)
 {
     idt_init();
     isr_init();
-    fpu_init();
     irq_init();
     screen_init();
     timer_init();
