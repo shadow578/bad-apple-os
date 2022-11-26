@@ -1,8 +1,6 @@
 #include "renderer.h"
 #include "frames.h"
 
-char buf[64];
-
 /**
  * working configs for rectangles renderer:
  * skip | count | nth   | min_rect_size | max_rect_count    | est. size
@@ -73,38 +71,30 @@ bool renderFrame(const u8 *rects, u32 frameNo)
 
         rectsCount++;
     } while ((flags & FLAG_LAST_RECT) == 0);
-
-    // draw frame no
-    itoa(frameNo, buf, 64);
-    font_str(
-        buf,
-        0,
-        0,
-        COLOR(255, 0, 0));
-
-    // draw number of rects
-    itoa(rectsCount, buf, 64);
-    font_str(
-        buf,
-        0,
-        10,
-        COLOR(255, 0, 0));
-
+    
     return false;
 }
 
-u32 render()
+u32 render(TickCallback onTick, FrameCallback onFrame)
 {
-    u32 last_frame = 0, frameCounter = 0;
+    u32 now,
+        deltaTime,
+        lastTick = 0,
+        frameDeltaTime = 0,
+        frameCounter = 0;
     const u8 *rects;
     for (;;)
     {
-        const u32 now = (u32)timer_get();
+        // handle ticking
+        now = (u32)timer_get();
+        deltaTime = now - lastTick;
+        lastTick = now;
+        onTick(deltaTime);
 
-        if ((now - last_frame) > (TIMER_TPS / FPS))
+        // handle frames
+        frameDeltaTime += deltaTime;
+        if (frameDeltaTime > (TIMER_TPS / FPS))
         {
-            last_frame = now;
-
             // get rects for next frame
             rects = rectData[frameCounter];
 
@@ -118,14 +108,10 @@ u32 render()
             if (eof)
                 break;
 
-            // controlled in system.c
-            const char *notification = get_notification();
-            if (notification != NULL)
-            {
-                font_str(notification, 0, 0, COLOR(6, 1, 1));
-            }
-
+            // finish the frame
+            onFrame(frameCounter, frameDeltaTime);
             screen_swap();
+            frameDeltaTime = 0;
         }
     }
 
