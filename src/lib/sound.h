@@ -4,8 +4,8 @@
 #include "util.h"
 
 // SOUND BACKENDS, enable one
-#define SOUND_SB16
-// #define SOUND_PCSPK
+// #define SOUND_SB16
+#define SOUND_PCSPK
 
 #define NUM_NOTES 8
 

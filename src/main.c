@@ -7,16 +7,15 @@
 #include "lib/font.h"
 #include "lib/system.h"
 #include "lib/keyboard.h"
-#include "lib/sound.h"
 #include "sleep.h"
 #include "renderer.h"
-
+#include "music.h"
 
 char buf[64];
 
 void onRenderTick(u32 deltaTime)
 {
-    sound_tick();
+    music_tick(deltaTime);
 }
 
 void onRenderFrame(u32 frame, u32 deltaTime)
@@ -54,9 +53,7 @@ void _main(u32 magic)
     screen_init();
     timer_init();
     keyboard_init();
-
-    sound_init();
-    sound_note(0, OCTAVE_4, NOTE_C);
+    music_init();
 
     // draw "ready"
     screen_clear(COLOR(0, 0, 0));
