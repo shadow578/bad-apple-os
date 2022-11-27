@@ -1,7 +1,7 @@
 #define TRACK_BPM 138
 
 #pragma region Helpers
-#include "music.h"
+#include "../os/music.h"
 
 #define NOTE(octave, note, duration) {(octave), (note), (duration * TICKS_PER_SIXTEENTH)}
 

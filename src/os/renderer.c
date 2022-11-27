@@ -1,5 +1,4 @@
 #include "renderer.h"
-#include "frames.h"
 
 /**
  * working configs for rectangles renderer:

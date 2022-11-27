@@ -1,8 +1,8 @@
 #ifndef MUSIC_H
 #define MUSIC_H
-#include "lib/util.h"
-#include "lib/sound.h"
-#include "lib/timer.h"
+#include "../lib/util.h"
+#include "../lib/sound.h"
+#include "../lib/timer.h"
 
 #define END_OCTAVE 0xff
 #define END_NOTE 0xff

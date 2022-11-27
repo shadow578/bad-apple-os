@@ -7,9 +7,9 @@
 #include "lib/font.h"
 #include "lib/system.h"
 #include "lib/keyboard.h"
-#include "sleep.h"
-#include "renderer.h"
-#include "music.h"
+#include "os/sleep.h"
+#include "os/renderer.h"
+#include "os/music.h"
 
 char buf[64];
 
